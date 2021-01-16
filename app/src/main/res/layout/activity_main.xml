@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:reverseLayout="false"
+        tools:listitem="@layout/image_icon" />
+    <Button
+        android:layout_width="70dp"
+        android:layout_height="wrap_content"
+        android:onClick="DeleteImage"
+        android:id="@+id/Delete"
+        android:background="@drawable/delete"
+        app:layout_constraintBaseline_toBaselineOf="@id/addimage"
+        app:layout_constraintLeft_toRightOf="@id/addimage"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/PickFromGallery"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="OpenGallery"
+        android:text="Gallery"
+        app:layout_constraintBottom_toTopOf="@id/addimage"
+        app:layout_constraintRight_toLeftOf="@id/guideline"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/New"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        android:onClick="NewFile"
+        android:text="New"
+        app:layout_constraintBottom_toTopOf="@id/image"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/recyclerView" />
+
+    <Button
+        android:id="@+id/Capture"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Capture"
+        app:layout_constraintLeft_toRightOf="@id/guideline"
+        app:layout_constraintBaseline_toBaselineOf="@id/PickFromGallery"
+        android:visibility="gone"
+        android:onClick="onClickingCapture"/>
+
+    <Button
+        android:id="@+id/Convert"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="MakePdf"
+        android:padding="12dp"
+        android:text="Convert"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent" />
+
+    <ImageView
+        android:id="@+id/image"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:src="@drawable/imageimage"
+        app:layout_constraintBottom_toTopOf="@id/Capture"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/recyclerView" />
+
+    <Button
+        android:id="@+id/addimage"
+        android:layout_width="62dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/addimage"
+        android:onClick="onAddClick"
+        android:padding="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.5"
+        app:layout_constraintGuide_begin="20dp" />
+    <Button
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:id="@+id/B_W"
+        app:layout_constraintLeft_toRightOf="@id/Delete"
+        app:layout_constraintBaseline_toBaselineOf="@id/Delete"
+        android:background="@drawable/blackandwhite"
+        android:visibility="gone"
+        android:onClick="FilerClick"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

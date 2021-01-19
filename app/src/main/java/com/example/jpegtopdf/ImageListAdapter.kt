@@ -25,7 +25,7 @@ class ImageListAdapter(private val listener: imageIconClicked): RecyclerView.Ada
 
     fun AddFilter(imageList: ArrayList<Bitmap>, filterList:ArrayList<Bitmap>):Bitmap{
 
-        var x= imageList[CP]
+        val x= imageList[CP]
         imageList.remove(imageList[CP])
         imageList.add(CP,filterList[CP])
         filterList.remove(filterList[CP])
@@ -51,36 +51,7 @@ class ImageListAdapter(private val listener: imageIconClicked): RecyclerView.Ada
 //        imageList.add(CP,bmpGrayscale)
 //        items.remove(items[CP])
 //        items.add(CP,bmpGrayscale)
-//        val bitmap = items[CP]
-//        val width = bitmap.width
-//        val height = bitmap.height
-//        var A: Int
-//        var R: Int
-//        var G: Int
-//        var B: Int
-//        var pixel: Int
-//        for (x in 0 until width) {
-//            for (y in 0 until height) {
-//                // get pixel color
-//                pixel = bitmap.getPixel(x, y)
-//                A = Color.alpha(pixel)
-//                R = Color.red(pixel)
-//                G = Color.green(pixel)
-//                B = Color.blue(pixel)
-//                var gray = (0.2989 * R + 0.5870 * G + 0.1140 * B).toInt()
-//                gray = if (gray > 128) {
-//                    255
-//                } else {
-//                    0
-//                }
-//                bitmap.setPixel(x, y, Color.argb(A, gray, gray, gray))
-//            }
-//        }
-//        items.remove(items[CP])
-//        items.add(CP,bitmap)
-//        imageList.remove(imageList[CP])
-//        imageList.add(CP,bitmap)
-        notifyDataSetChanged()
+
     }
 
     fun addAll(list: List<Bitmap>) {

@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Jpeg to pdf</string>
+    <string name="app_name">Pdf Maker</string>
+    <string name="pdf_maker">Pdf Maker</string>
 </resources>

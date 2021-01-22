@@ -82,7 +82,6 @@ class ImageListAdapter(private val listener: imageIconClicked): RecyclerView.Ada
     override fun onBindViewHolder(holder: ImageViewHolder, position: Int) {
         val currentItem=items[position]
         holder.imageIcon.setImageBitmap(currentItem)
-        //CP=position
         holder.imageIcon.setBackgroundResource(if (selectedPos == position) R.drawable.back else 0)
 
     }

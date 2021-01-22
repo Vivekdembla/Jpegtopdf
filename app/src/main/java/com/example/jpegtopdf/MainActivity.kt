@@ -5,18 +5,17 @@ import android.content.Intent
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
-import android.nfc.Tag
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.MediaStore.Downloads
 import android.util.Log
 import android.view.View
 import android.view.View.*
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.SeekBar
-import android.widget.SeekBar.OnSeekBarChangeListener
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.Guideline
@@ -38,10 +37,12 @@ import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
-import kotlin.math.log
 
 
-class MainActivity : AppCompatActivity(), imageIconClicked {
+class MainActivity : AppCompatActivity(), imageIconClicked{
+    lateinit var progressBar:ProgressBar
+    lateinit var nameofpdf:String
+    lateinit var dateofpdf:String
     lateinit var level2:ImageView
     lateinit var guideline7:Guideline
     lateinit var B_W:Button
@@ -53,15 +54,17 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
     lateinit var image: ImageView
     lateinit var currentPhotoPath: String
     private lateinit var mAdapter: ImageListAdapter
+
     lateinit var Capture: Button
     lateinit var PickFromGallery:Button
     override fun onCreate(savedInstanceState: Bundle?) {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            window.statusBarColor = ContextCompat.getColor(this, R.color.Top)
+            window.statusBarColor = ContextCompat.getColor(this, R.color.x)
         }
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        progressBar = findViewById(R.id.progressBar)
         level2=findViewById(R.id.level2)
         Capture=findViewById(R.id.Capture)
         PickFromGallery= findViewById(R.id.PickFromGallery)
@@ -84,11 +87,14 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        GlobalScope.launch(Dispatchers.IO) {
+
             if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
+                progressBar.visibility = VISIBLE
+                GlobalScope.launch(Dispatchers.IO) {
                 setPic()
                 withContext(Dispatchers.Main) {
                     mAdapter.updateList(imageList)
+                    progressBar.visibility = GONE
                     mAdapter.refresh()
                     delete.visibility = VISIBLE
                     B_W.visibility = VISIBLE
@@ -98,48 +104,54 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
             }
         }
         if (resultCode == RESULT_OK && requestCode == PICK_IMAGE) {
+            progressBar.visibility = VISIBLE
             level2.visibility = VISIBLE
-            val imageUri = data?.data
-            image.setImageURI(imageUri)
+            GlobalScope.launch(Dispatchers.IO) {
+                val imageUri = data?.data
+                withContext(Dispatchers.Main) {
+                    image.setImageURI(imageUri)
+                    progressBar.visibility = GONE
+                }
+                val bitmap = (image.drawable as BitmapDrawable).bitmap
+                val scaled: Bitmap
+                if (bitmap.height > bitmap.width) {
+                    val x: Float = bitmap.height.toFloat() / A2.height
+                    scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt() * 2, A2.height.toInt())
 
+                } else {
+                    val x: Float = bitmap.width.toFloat() / A2.width
+                    scaled =
+                        getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt() * 2)
+                }
 
-            val bitmap = (image.drawable as BitmapDrawable).bitmap
-            val scaled:Bitmap
-            if(bitmap.height>bitmap.width){
-                val x:Float = bitmap.height.toFloat()/ A4.height
-                scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt()*2, A2.height.toInt())
-
+                if (mAdapter.CP < imageList.size) {
+                    imageList.add(mAdapter.CP + 1, scaled)
+                    val x = FilterBitmap(scaled)
+                    filterlist.add(mAdapter.CP + 1, x)
+                } else {
+                    imageList.add(scaled)
+                    val x = FilterBitmap(scaled)
+                    filterlist.add(x)
+                }
+                withContext(Dispatchers.Main) {
+                    mAdapter.updateList(imageList)
+                    delete.visibility = VISIBLE
+                    B_W.visibility = VISIBLE
+                    mAdapter.refresh()
+                    progressBar.visibility = GONE
+                    image.setImageBitmap(imageList[mAdapter.CP])
+                }
             }
-            else{
-                val x:Float = bitmap.width.toFloat()/A4.width
-                scaled = getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt()*2)
-            }
-
-            if(mAdapter.CP<imageList.size) {
-                imageList.add(mAdapter.CP + 1, scaled)
-                val x = FilterBitmap(scaled)
-                filterlist.add(mAdapter.CP + 1, x)
-            }
-            else{
-                imageList.add(scaled)
-                val x = FilterBitmap(scaled)
-                filterlist.add(x)
-            }
-            mAdapter.updateList(imageList)
-            delete.visibility= VISIBLE
-            B_W.visibility = VISIBLE
-            mAdapter.refresh()
-            image.setImageBitmap(imageList[mAdapter.CP])
         }
     }
 
     private fun setPic() {
-        Log.i("this","SET PIC K ANDR")
+        Log.i("this", "SET PIC K ANDR")
         val targetW: Int = image.width
         val targetH: Int = image.height
 
         val bmOptions = BitmapFactory.Options().apply {
-            Log.i("this","FACTORY PIC K ANDR")
+            Log.i("this", "FACTORY PIC K ANDR")
 
             inJustDecodeBounds = true
 
@@ -153,11 +165,9 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
             inJustDecodeBounds = false
             inSampleSize = scaleFactor
             inScaled = false
-            Log.i("this","FACTORY SE BAHAR JATE HUE")
         }
         BitmapFactory.decodeFile(currentPhotoPath, bmOptions)?.also { bitmap ->
-            Log.i("this","DECODE FILE K ANDR")
-                //image.setImageBitmap(bitmap)
+            Log.e("this", "DECODE FILE K ANDR")
             val scaled : Bitmap
             if(bitmap.height>bitmap.width){
                 val x:Float = bitmap.height.toFloat()/ A2.height
@@ -167,6 +177,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
                 val x:Float = bitmap.width.toFloat()/A2.width
                 scaled = getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt())
             }
+
             if(mAdapter.CP<imageList.size) {
                 imageList.add(mAdapter.CP + 1, scaled)
                 val x = FilterBitmap(scaled)
@@ -177,7 +188,6 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
                 val x = FilterBitmap(scaled)
                 filterlist.add(x)
             }
-            Log.i("this","DECODE FILE K BAHAR JAATE HUE")
         }
     }
 
@@ -191,9 +201,11 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
         // RESIZE THE BIT MAP
         matrix.postScale(scaleWidth, scaleHeight)
 
-        // "RECREATE" THE NEW BITMAP
+//         "RECREATE" THE NEW BITMAP
         val resizedBitmap = Bitmap.createBitmap(
-                bm, 0, 0, width, height, matrix, false)
+            bm, 0, 0, width, height, matrix, false
+        )
+//        val resizedBitmap = Bitmap.createScaledBitmap(bm,width/8,height/8,false)
         bm.recycle()
         return resizedBitmap
     }
@@ -210,12 +222,15 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
                     }
                     photoFile?.also {
                         val photoURI: Uri = FileProvider.getUriForFile(
-                                this,
-                                "com.example.android.fileprovider",
-                                it
+                            this,
+                            "com.example.jpegtopdf.provider",
+                            it
                         )
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
                         startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
+//                        val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+//                        startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE)
+
                     }
             }
         }
@@ -225,9 +240,9 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
             val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
             val storageDir: File? = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
             return File.createTempFile(
-                    "JPEG_${timeStamp}_",
-                    ".jpg",
-                    storageDir
+                "JPEG_${timeStamp}_",
+                ".jpg",
+                storageDir
             ).apply {
                 currentPhotoPath = absolutePath
             }
@@ -235,19 +250,31 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
 
     override fun onIconClicked(item: Bitmap) {
         image.setImageBitmap(item)
-
     }
 
     fun MakePdf(view: View) {
-
         GlobalScope.launch(Dispatchers.IO) {
             CreatePdf(imageList)
+            withContext(Dispatchers.Main) {
+                val intent = Intent(this@MainActivity, ShowPdfActivity::class.java)
+                intent.putExtra("FileName", nameofpdf)
+                intent.putExtra("FileDate", dateofpdf)
+                startActivity(intent)
+            }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            Toast.makeText(this, "File Path: ${Environment.DIRECTORY_DOWNLOADS}/Pdf list", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "File Path: ${Environment.DIRECTORY_DOWNLOADS}/Pdf_list",
+                Toast.LENGTH_SHORT
+            ).show()
         }
         else{
-            Toast.makeText(this, "File Path: ${getExternalFilesDir(null)}/my file", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "File Path: ${getExternalFilesDir(null)}/my file",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -262,30 +289,43 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
             val contentStream = PDPageContentStream(document, page)
             val ximage = JPEGFactory.createFromImage(document, list[i])
 
-            contentStream.drawImage(ximage, ((A2.width - list[i].width) / 2), ((A2.height - list[i].height) / 2)+50,list[i].width.toFloat(),list[i].height.toFloat()-100)
+            contentStream.drawImage(
+                ximage,
+                ((A2.width - list[i].width) / 2),
+                ((A2.height - list[i].height) / 2) + 50,
+                list[i].width.toFloat(),
+                list[i].height.toFloat() - 100
+            )
 
             contentStream.close()
         }
-        val outputStream: OutputStream?
+        var outputStream: OutputStream?
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        val timeStamp2: String = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.US).format(Date())
+        val imageFileName = "PDF_$timeStamp"
+        val fileName= "$imageFileName.pdf"
+        nameofpdf=fileName
+        dateofpdf=timeStamp2
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             var relativePath = Environment.DIRECTORY_DOWNLOADS
-            relativePath += File.separator + "Pdf list"
-            val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            val imageFileName = "PDF_$timeStamp"
-            val fileName: String = "$imageFileName.pdf"
+            relativePath += File.separator + "Pdf_list"
+            val file: File? = getOutputFile(timeStamp, imageFileName)
+            outputStream = FileOutputStream(file)
+            document.save(outputStream)
             val values = ContentValues()
             values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
             values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativePath)
             val cr = this.contentResolver
-            val uri = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
+            val uri = cr.insert(Downloads.EXTERNAL_CONTENT_URI, values)
             outputStream = cr.openOutputStream(uri!!)
             uri.let {
                 document.save(outputStream)
                 document.close()
             }
+
         } else {
-            val file: File? = getOutputFile()
-            if (file != null)
+            val file: File? = getOutputFile(timeStamp, imageFileName)
+            if (file != null) {
                 try {
                     outputStream = FileOutputStream(file)
                     document.save(outputStream)
@@ -293,13 +333,13 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
+            }
         }
-
     }
 
 
 
-    private fun getOutputFile(): File?{
+    private fun getOutputFile(timeStamp: String, imageFileName: String): File?{
         val root: File = File(getExternalFilesDir(null), "my file")
 
 
@@ -310,8 +350,6 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
             }
 
         return if (isFolderCreated) {
-            val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-            val imageFileName = "PDF_$timeStamp"
             File(root, "$imageFileName.pdf")
         } else {
             Toast.makeText(this, "Folder is not created", Toast.LENGTH_SHORT).show()
@@ -352,7 +390,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
 
         val width = bitmap.width
         val height = bitmap.height
-        var xy: Bitmap
+        val xy: Bitmap
         xy = Bitmap.createScaledBitmap(bitmap, bitmap.width, bitmap.height, false)
         var A: Int
         var R: Int
@@ -366,13 +404,16 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
                 R = Color.red(pixel)
                 G = Color.green(pixel)
                 B = Color.blue(pixel)
-                var gray = (0.2989 * R + 0.5870 * G + 0.1140 * B).toInt()
-                gray = if (gray > value) {
-                    255
-                } else {
-                    0
-                }
-                xy.setPixel(x, y, Color.argb(A, gray, gray, gray))
+//                var gray = (0.2989 * R + 0.5870 * G + 0.1140 * B).toInt()
+//                gray = if (gray > value) {
+//                    255
+//                } else {
+//                    0
+//                }
+//                xy.setPixel(x, y, Color.argb(A, gray, gray, gray))
+
+                val grayScale = (R * 0.3 + G * 0.59 + B * 0.11).toInt()
+                xy.setPixel(x, y, Color.argb(A, grayScale, grayScale, grayScale))
             }
         }
         return xy
@@ -381,6 +422,11 @@ class MainActivity : AppCompatActivity(), imageIconClicked {
     fun FilerClick(view: View) {
         val bitmap = mAdapter.AddFilter(imageList, filterlist)
         image.setImageBitmap(bitmap)
+    }
+
+    fun onClickList(view: View) {
+        val intent = Intent(this, ShowPdfActivity::class.java)
+        startActivity(intent)
     }
 
 

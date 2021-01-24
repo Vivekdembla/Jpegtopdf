@@ -12,6 +12,7 @@
         android:maxSdkVersion="18" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
         android:allowBackup="true"
@@ -21,15 +22,25 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
-        <activity android:name=".HomeActivity"></activity>
-        <activity android:name=".ShowPdfActivity" />
+        <activity android:name=".HomeActivity"
+            android:screenOrientation="locked">
+        </activity>
+        <activity android:name=".ShowPdfActivity"
+            android:screenOrientation="locked">
+        </activity>
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-3461290911046528~1027422275"/>
 
         <meta-data
             android:name="com.google.android.actions"
             android:resource="@drawable/round" />
 
-        <activity android:name=".MainActivity" />
-        <activity android:name=".SplashScreen">
+        <activity android:name=".MainActivity"
+            android:screenOrientation="locked">
+        </activity>
+        <activity android:name=".SplashScreen"
+            android:screenOrientation="locked">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

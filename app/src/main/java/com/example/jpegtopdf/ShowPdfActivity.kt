@@ -1,7 +1,9 @@
 package com.example.jpegtopdf
-
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
@@ -12,22 +14,30 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.ads.*
 import java.io.File
 
 open class ShowPdfActivity : AppCompatActivity(), IconClicked {
     lateinit var viewModel: PdfViewModel
     private lateinit var mAdapter2: PdfListAdapter
     lateinit var recyclerView2: RecyclerView
+    lateinit var mAdView : AdView
     override fun onCreate(savedInstanceState: Bundle?) {
+        this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            window.statusBarColor = ContextCompat.getColor(this, R.color.Darkblue)
+            window.statusBarColor = ContextCompat.getColor(this, R.color.Top)
         }
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_show_pdf)
+        MobileAds.initialize(this) {}
+        mAdView = findViewById(R.id.adView)
+        val adRequest = AdRequest.Builder().build()
+        mAdView.loadAd(adRequest)
         recyclerView2 = findViewById(R.id.recyclerView2)
         recyclerView2.layoutManager = GridLayoutManager(this, 2)
         mAdapter2 = PdfListAdapter(this)
         recyclerView2.adapter = mAdapter2
+
         viewModel = ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(application)).get(PdfViewModel::class.java)
         viewModel.allPdfs.observe(this, androidx.lifecycle.Observer { list ->
             list?.let {

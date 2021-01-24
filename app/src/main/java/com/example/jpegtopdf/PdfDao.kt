@@ -1,14 +1,11 @@
 package com.example.jpegtopdf
 
 import androidx.lifecycle.LiveData
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.Query
+import androidx.room.*
 
 @Dao
 interface PdfDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(pdf:Pdf)
     @Delete
     suspend fun delete(pdf: Pdf)

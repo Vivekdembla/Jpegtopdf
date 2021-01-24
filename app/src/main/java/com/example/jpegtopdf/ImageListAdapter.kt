@@ -11,13 +11,13 @@ import kotlin.collections.ArrayList
 
 
 class ImageListAdapter(private val listener: imageIconClicked): RecyclerView.Adapter<ImageViewHolder>() {
-    var CP = 0
+    var CP = -1
     var filtercount=0
     var selectedPos = -1
     private var items: ArrayList<Bitmap> = ArrayList()
 
     fun remove(imageList: ArrayList<Bitmap>):Int {
-        items.remove(items[CP])
+//        items.remove(items[CP])
         imageList.remove(imageList[CP])
         notifyDataSetChanged()
         return CP-1
@@ -59,8 +59,9 @@ class ImageListAdapter(private val listener: imageIconClicked): RecyclerView.Ada
         notifyDataSetChanged()
     }
     fun refresh(){
-        selectedPos=items.size-1
-        CP = selectedPos
+//        selectedPos=items.size-1
+        selectedPos = CP
+
         notifyDataSetChanged()
     }
 
@@ -73,7 +74,6 @@ class ImageListAdapter(private val listener: imageIconClicked): RecyclerView.Ada
             listener.onIconClicked(items[viewHolder.adapterPosition])
             CP=viewHolder.adapterPosition
             selectedPos = CP
-            //filtercount = 0
             notifyDataSetChanged()
         }
         return viewHolder

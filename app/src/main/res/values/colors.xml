@@ -9,6 +9,7 @@
     <color name="white">#FFFFFFFF</color>
     <color name="Darkblue">#2149EB</color>
     <color name="Lightblue">#8AD2DB</color>
-    <color name="Top">#767AE6</color>
+    <color name="Top">#1975E0</color>
     <color name="x">#608EC4</color>
+    <color name="z">#608EC4</color>
 </resources>

@@ -1,9 +1,13 @@
 package com.example.jpegtopdf
 
+
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -13,10 +17,8 @@ import android.provider.MediaStore.Downloads
 import android.util.Log
 import android.view.View
 import android.view.View.*
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.Toast
+import android.view.inputmethod.InputMethodManager
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.Guideline
 import androidx.core.app.ActivityCompat
@@ -24,6 +26,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.ads.*
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
@@ -40,12 +45,25 @@ import kotlin.collections.ArrayList
 
 
 class MainActivity : AppCompatActivity(), imageIconClicked{
+    private final var TAG = "MainActivity"
+    lateinit var blur:ImageView
+    lateinit var renameBackground:ImageView
+    lateinit var creatingPdf:TextView
+    lateinit var fileName:TextView
+    lateinit var nameOfFile:EditText
+    lateinit var okButton:Button
+    lateinit var cancelButton:Button
+    lateinit var rotate:Button
+    lateinit var New:Button
+    lateinit var PdfList:Button
+    lateinit var Convert:Button
     lateinit var progressBar:ProgressBar
     lateinit var nameofpdf:String
     lateinit var dateofpdf:String
     lateinit var level2:ImageView
     lateinit var guideline7:Guideline
     lateinit var B_W:Button
+    lateinit var recyclerView:RecyclerView
     lateinit var delete:Button
     private val PICK_IMAGE = 100
     var REQUEST_IMAGE_CAPTURE = 1
@@ -54,16 +72,28 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     lateinit var image: ImageView
     lateinit var currentPhotoPath: String
     private lateinit var mAdapter: ImageListAdapter
-
     lateinit var Capture: Button
     lateinit var PickFromGallery:Button
+    var mInterstitialAd: InterstitialAd?=null
     override fun onCreate(savedInstanceState: Bundle?) {
+        this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            window.statusBarColor = ContextCompat.getColor(this, R.color.x)
+            window.statusBarColor = ContextCompat.getColor(this, R.color.Top)
         }
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        MobileAds.initialize(this) {}
+        blur = findViewById(R.id.blur)
+        renameBackground=findViewById(R.id.renameBackground)
+        creatingPdf =findViewById(R.id.creatingPdf)
+        fileName= findViewById(R.id.fileName)
+        nameOfFile=findViewById(R.id.nameOfFile)
+        okButton=findViewById(R.id.okButton)
+        cancelButton= findViewById(R.id.cancelButton)
+        rotate = findViewById(R.id.rotate)
+        New = findViewById(R.id.New)
+        PdfList = findViewById(R.id.PdfList)
+        Convert = findViewById(R.id.Convert)
         progressBar = findViewById(R.id.progressBar)
         level2=findViewById(R.id.level2)
         Capture=findViewById(R.id.Capture)
@@ -72,12 +102,47 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         delete = findViewById(R.id.Delete)
         B_W = findViewById(R.id.B_W)
         guideline7 = findViewById(R.id.guideline7)
-        val recyclerView=findViewById<RecyclerView>(R.id.recyclerView)
+        recyclerView=findViewById<RecyclerView>(R.id.recyclerView)
         recyclerView.layoutManager= LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         mAdapter= ImageListAdapter(this)
         recyclerView.adapter=mAdapter
+        MobileAds.initialize(this) {}
+        fetchAd()
 
     }
+
+    fun fetchAd(){
+
+        val adRequest = AdRequest.Builder().build()
+
+        InterstitialAd.load(this,"ca-app-pub-3461290911046528/4857489097", adRequest, object : InterstitialAdLoadCallback() {
+            override fun onAdFailedToLoad(adError: LoadAdError) {
+                Log.d("this", adError.message);
+                mInterstitialAd = null
+            }
+
+            override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                Log.d("this", "Ad was loaded.")
+                mInterstitialAd = interstitialAd
+            }
+        })
+
+        mInterstitialAd?.fullScreenContentCallback = object: FullScreenContentCallback() {
+            override fun onAdDismissedFullScreenContent() {
+                Log.d("this", "Ad was dismissed.");
+            }
+
+            override fun onAdFailedToShowFullScreenContent(adError: AdError?) {
+                Log.d("this", "Ad failed to show.");
+            }
+
+            override fun onAdShowedFullScreenContent() {
+                Log.d("this", "Ad showed fullscreen content.");
+                mInterstitialAd = null
+            }
+        }
+    }
+
 
     fun onClickingCapture(view: View) {
         GlobalScope.launch(Dispatchers.IO) {
@@ -91,52 +156,54 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
                 progressBar.visibility = VISIBLE
                 GlobalScope.launch(Dispatchers.IO) {
-                setPic()
+                    setPic()
                 withContext(Dispatchers.Main) {
+                    mAdapter.CP+=1
                     mAdapter.updateList(imageList)
                     progressBar.visibility = GONE
                     mAdapter.refresh()
                     delete.visibility = VISIBLE
+                    Convert.visibility = VISIBLE
                     B_W.visibility = VISIBLE
+                    rotate.visibility = VISIBLE
                     level2.visibility = VISIBLE
                     image.setImageBitmap(imageList[mAdapter.CP])
+
+//                    val x = FilterBitmap(imageList[p])
                 }
             }
         }
         if (resultCode == RESULT_OK && requestCode == PICK_IMAGE) {
             progressBar.visibility = VISIBLE
             level2.visibility = VISIBLE
+            val imageUri = data?.data
+            image.setImageURI(imageUri)
+            Log.e("this", "image k andr")
+            val y = (image.drawable as BitmapDrawable).bitmap
+            val bitmap = y
+            Log.e("this", "bitmap k andr")
             GlobalScope.launch(Dispatchers.IO) {
-                val imageUri = data?.data
-                withContext(Dispatchers.Main) {
-                    image.setImageURI(imageUri)
-                    progressBar.visibility = GONE
-                }
-                val bitmap = (image.drawable as BitmapDrawable).bitmap
                 val scaled: Bitmap
                 if (bitmap.height > bitmap.width) {
                     val x: Float = bitmap.height.toFloat() / A2.height
-                    scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt() * 2, A2.height.toInt())
+                    scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt(), A2.height.toInt())
+                    Log.e("this", "scaled k andr")
 
                 } else {
                     val x: Float = bitmap.width.toFloat() / A2.width
                     scaled =
-                        getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt() * 2)
+                        getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt())
+                    Log.e("this", "else scaled k andr")
                 }
-
-                if (mAdapter.CP < imageList.size) {
-                    imageList.add(mAdapter.CP + 1, scaled)
-                    val x = FilterBitmap(scaled)
-                    filterlist.add(mAdapter.CP + 1, x)
-                } else {
-                    imageList.add(scaled)
-                    val x = FilterBitmap(scaled)
-                    filterlist.add(x)
-                }
+                imageList.add(mAdapter.CP + 1, scaled)
+                filterlist.add(mAdapter.CP + 1, scaled)
                 withContext(Dispatchers.Main) {
+                    mAdapter.CP+=1
                     mAdapter.updateList(imageList)
                     delete.visibility = VISIBLE
+                    Convert.visibility = VISIBLE
                     B_W.visibility = VISIBLE
+                    rotate.visibility = VISIBLE
                     mAdapter.refresh()
                     progressBar.visibility = GONE
                     image.setImageBitmap(imageList[mAdapter.CP])
@@ -146,49 +213,71 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     }
 
     private fun setPic() {
-        Log.i("this", "SET PIC K ANDR")
-        val targetW: Int = image.width
-        val targetH: Int = image.height
+            Log.i("this", "SET PIC K ANDR")
+            val targetW: Int = image.width
+            val targetH: Int = image.height
 
-        val bmOptions = BitmapFactory.Options().apply {
-            Log.i("this", "FACTORY PIC K ANDR")
+            val bmOptions = BitmapFactory.Options().apply {
+                Log.i("this", "FACTORY PIC K ANDR")
 
-            inJustDecodeBounds = true
+                inJustDecodeBounds = true
 
-            BitmapFactory.decodeFile(currentPhotoPath)
+                BitmapFactory.decodeFile(currentPhotoPath)
 
-            val photoW: Int = outWidth
-            val photoH: Int = outHeight
+                val photoW: Int = outWidth
+                val photoH: Int = outHeight
 
-            val scaleFactor: Int = Math.max(1, Math.min(photoW / targetW, photoH / targetH))
+                val scaleFactor: Int = Math.max(1, Math.min(photoW / targetW, photoH / targetH))
 
-            inJustDecodeBounds = false
-            inSampleSize = scaleFactor
-            inScaled = false
-        }
-        BitmapFactory.decodeFile(currentPhotoPath, bmOptions)?.also { bitmap ->
-            Log.e("this", "DECODE FILE K ANDR")
-            val scaled : Bitmap
-            if(bitmap.height>bitmap.width){
-                val x:Float = bitmap.height.toFloat()/ A2.height
-                scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt(), A2.height.toInt())
+                inJustDecodeBounds = false
+                inSampleSize = scaleFactor
+                inScaled = false
             }
-            else{
-                val x:Float = bitmap.width.toFloat()/A2.width
-                scaled = getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt())
-            }
+            BitmapFactory.decodeFile(currentPhotoPath, bmOptions)?.also { bitmap ->
+                Log.e("this", "DECODE FILE K ANDR")
+                var scaled:Bitmap
+                if (bitmap.height > bitmap.width) {
+                    val x: Float = bitmap.height.toFloat() / A2.height
+                    scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt() + 100, A2.height.toInt())
+                } else {
+                    val x: Float = bitmap.width.toFloat() / A2.width
+                    scaled = getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt() + 100)
+                }
 
-            if(mAdapter.CP<imageList.size) {
+                val matrix = Matrix()
+                val rotate = getImageOrientation(currentPhotoPath)
+                matrix.postRotate(rotate.toFloat())
+                scaled = Bitmap.createBitmap(scaled, 0, 0, scaled.getWidth(), scaled.getHeight(), matrix, true)
+
+//                if (mAdapter.CP < imageList.size) {
                 imageList.add(mAdapter.CP + 1, scaled)
-                val x = FilterBitmap(scaled)
-                filterlist.add(mAdapter.CP + 1, x)
+                filterlist.add(mAdapter.CP + 1, scaled)
+//                    p=mAdapter.CP+1
+//                val x = FilterBitmap(scaled)
+//                filterlist.add(mAdapter.CP + 1, x)
+//                } else {
+//                    imageList.add(scaled)
+//                    p=mAdapter.CP
+//                val x = FilterBitmap(scaled)
+//                filterlist.add(x)
+//                }
             }
-            else{
-                imageList.add(scaled)
-                val x = FilterBitmap(scaled)
-                filterlist.add(x)
+    }
+
+    fun getImageOrientation(imagePath: String?): Int {
+        var rotate = 0
+        try {
+            val exif = ExifInterface(imagePath!!)
+            val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_270 -> rotate = 270
+                ExifInterface.ORIENTATION_ROTATE_180 -> rotate = 180
+                ExifInterface.ORIENTATION_ROTATE_90 -> rotate = 90
             }
+        } catch (e: IOException) {
+            e.printStackTrace()
         }
+        return rotate
     }
 
     fun getResizedBitmap(bm: Bitmap, newWidth: Int, newHeight: Int): Bitmap {
@@ -203,13 +292,12 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
 
 //         "RECREATE" THE NEW BITMAP
         val resizedBitmap = Bitmap.createBitmap(
-            bm, 0, 0, width, height, matrix, false
+                bm, 0, 0, width, height, matrix, false
         )
 //        val resizedBitmap = Bitmap.createScaledBitmap(bm,width/8,height/8,false)
         bm.recycle()
         return resizedBitmap
     }
-
 
     private fun dispatchTakePictureIntent() {
         Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
@@ -222,9 +310,9 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
                     }
                     photoFile?.also {
                         val photoURI: Uri = FileProvider.getUriForFile(
-                            this,
-                            "com.example.jpegtopdf.provider",
-                            it
+                                this,
+                                "com.example.jpegtopdf.provider",
+                                it
                         )
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
                         startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
@@ -235,14 +323,15 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             }
         }
     }
+
     fun createImageFile(): File {
 
             val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss").format(Date())
             val storageDir: File? = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
             return File.createTempFile(
-                "JPEG_${timeStamp}_",
-                ".jpg",
-                storageDir
+                    "JPEG_${timeStamp}_",
+                    ".jpg",
+                    storageDir
             ).apply {
                 currentPhotoPath = absolutePath
             }
@@ -253,8 +342,42 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     }
 
     fun MakePdf(view: View) {
+        if (mInterstitialAd != null) {
+            mInterstitialAd?.show(this)
+            fetchAd()
+        } else {
+            Log.d("TAG", "The interstitial ad wasn't ready yet.")
+            fetchAd()
+        }
+        renameBackground.visibility= VISIBLE
+        creatingPdf.visibility= VISIBLE
+        fileName.visibility= VISIBLE
+        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
+        nameOfFile.visibility= VISIBLE
+        nameOfFile.setText("PDF_$timeStamp")
+        okButton.visibility= VISIBLE
+        cancelButton.visibility= VISIBLE
+        blur.visibility = VISIBLE
+        recyclerView.visibility = GONE
+        PdfList.visibility = GONE
+        Capture.visibility = GONE
+        PickFromGallery.visibility = GONE
+        B_W.visibility = GONE
+        Convert.visibility = GONE
+        New.visibility = GONE
+        delete.visibility = GONE
+        rotate.visibility = GONE
+        image.visibility = VISIBLE
+        nameOfFile.requestFocus()
+        val imm: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(nameOfFile, InputMethodManager.SHOW_IMPLICIT)
+
+    }
+
+    fun pdfAfterName(view: View){
+
         GlobalScope.launch(Dispatchers.IO) {
-            CreatePdf(imageList)
+            CreatePdf(imageList, "${nameOfFile.getText()}.pdf")
             withContext(Dispatchers.Main) {
                 val intent = Intent(this@MainActivity, ShowPdfActivity::class.java)
                 intent.putExtra("FileName", nameofpdf)
@@ -264,24 +387,22 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             Toast.makeText(
-                this,
-                "File Path: ${Environment.DIRECTORY_DOWNLOADS}/Pdf_list",
-                Toast.LENGTH_SHORT
+                    this,
+                    "File Path: ${Environment.DIRECTORY_DOWNLOADS}/Pdf_list",
+                    Toast.LENGTH_SHORT
             ).show()
         }
         else{
             Toast.makeText(
-                this,
-                "File Path: ${getExternalFilesDir(null)}/my file",
-                Toast.LENGTH_SHORT
+                    this,
+                    "File Path: ${getExternalFilesDir(null)}/my file",
+                    Toast.LENGTH_SHORT
             ).show()
         }
+
     }
 
-
-
-
-    private fun CreatePdf(list: ArrayList<Bitmap>){
+    private fun CreatePdf(list: ArrayList<Bitmap>, name: String){
         val document = PDDocument()
         for (i in 0 until list.size) {
             val page = PDPage(A2)
@@ -290,26 +411,25 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             val ximage = JPEGFactory.createFromImage(document, list[i])
 
             contentStream.drawImage(
-                ximage,
-                ((A2.width - list[i].width) / 2),
-                ((A2.height - list[i].height) / 2) + 50,
-                list[i].width.toFloat(),
-                list[i].height.toFloat() - 100
+                    ximage,
+                    ((A2.width - list[i].width) / 2),
+                    ((A2.height - list[i].height) / 2) + 50,
+                    list[i].width.toFloat(),
+                    list[i].height.toFloat() - 100
             )
 
             contentStream.close()
         }
         var outputStream: OutputStream?
-        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
         val timeStamp2: String = SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.US).format(Date())
-        val imageFileName = "PDF_$timeStamp"
-        val fileName= "$imageFileName.pdf"
+        //val imageFileName = "PDF_$timeStamp"
+        val fileName= name
         nameofpdf=fileName
         dateofpdf=timeStamp2
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             var relativePath = Environment.DIRECTORY_DOWNLOADS
             relativePath += File.separator + "Pdf_list"
-            val file: File? = getOutputFile(timeStamp, imageFileName)
+            val file: File? = getOutputFile(fileName)
             outputStream = FileOutputStream(file)
             document.save(outputStream)
             val values = ContentValues()
@@ -324,7 +444,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             }
 
         } else {
-            val file: File? = getOutputFile(timeStamp, imageFileName)
+            val file: File? = getOutputFile(fileName)
             if (file != null) {
                 try {
                     outputStream = FileOutputStream(file)
@@ -337,9 +457,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         }
     }
 
-
-
-    private fun getOutputFile(timeStamp: String, imageFileName: String): File?{
+    private fun getOutputFile(imageFileName: String): File?{
         val root: File = File(getExternalFilesDir(null), "my file")
 
 
@@ -350,7 +468,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             }
 
         return if (isFolderCreated) {
-            File(root, "$imageFileName.pdf")
+            File(root, "$imageFileName")
         } else {
             Toast.makeText(this, "Folder is not created", Toast.LENGTH_SHORT).show()
             null
@@ -363,6 +481,13 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     }
 
     fun NewFile(view: View) {
+        if (mInterstitialAd != null) {
+            mInterstitialAd?.show(this)
+            fetchAd()
+        } else {
+            Log.d("TAG", "The interstitial ad wasn't ready yet.")
+            fetchAd()
+        }
         imageList.clear()
         mAdapter.updateList(imageList)
         image.setImageDrawable(ActivityCompat.getDrawable(this, R.drawable.imageimage))
@@ -372,21 +497,29 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         val x = mAdapter.remove(imageList)
         filterlist.remove(filterlist[mAdapter.CP])
 
-        if (x != -1) {
+        if (x > -1) {
             image.setImageBitmap(imageList[x])
-        } else if (imageList.size != 0) {
-            image.setImageBitmap(imageList[0])
-        } else {
+            mAdapter.CP=x
+        } else if(x==-1&&imageList.size==0){
             image.setImageDrawable(ActivityCompat.getDrawable(this, R.drawable.imageimage))
+            mAdapter.CP=x
+        }
+        else{
+            image.setImageBitmap(imageList[0])
+            mAdapter.CP=0
         }
         if(imageList.size==0) {
+            Convert.visibility = GONE
             delete.visibility = GONE
             B_W.visibility = GONE
-            level2.visibility = GONE
+            rotate.visibility = GONE
         }
+        mAdapter.updateList(imageList)
+        mAdapter.refresh()
+
     }
 
-    fun FilterBitmap(bitmap: Bitmap, value: Int = 128):Bitmap{
+    fun FilterBitmap(bitmap: Bitmap):Bitmap{
 
         val width = bitmap.width
         val height = bitmap.height
@@ -420,8 +553,34 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     }
 
     fun FilerClick(view: View) {
-        val bitmap = mAdapter.AddFilter(imageList, filterlist)
-        image.setImageBitmap(bitmap)
+        progressBar.visibility= VISIBLE
+        Capture.visibility = GONE
+        PickFromGallery.visibility= GONE
+        B_W.visibility= GONE
+        rotate.visibility = GONE
+        PdfList.visibility = GONE
+        Convert.visibility = GONE
+        New.visibility = GONE
+        delete.visibility = GONE
+        GlobalScope.launch(Dispatchers.IO) {
+            if (filterlist[mAdapter.CP] == imageList[mAdapter.CP]) {
+                filterlist.remove(filterlist[mAdapter.CP])
+                filterlist.add(mAdapter.CP, FilterBitmap(imageList[mAdapter.CP]))
+            }
+            withContext(Dispatchers.Main) {
+                val bitmap = mAdapter.AddFilter(imageList, filterlist)
+                progressBar.visibility = GONE
+                Capture.visibility = VISIBLE
+                PickFromGallery.visibility= VISIBLE
+                B_W.visibility= VISIBLE
+                rotate.visibility = VISIBLE
+                PdfList.visibility = VISIBLE
+                Convert.visibility = VISIBLE
+                New.visibility = VISIBLE
+                delete.visibility = VISIBLE
+                image.setImageBitmap(bitmap)
+            }
+        }
     }
 
     fun onClickList(view: View) {
@@ -429,5 +588,39 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         startActivity(intent)
     }
 
+    fun onClickRotate(view: View) {
+        val matrix = Matrix()
+        matrix.postRotate(90f)
+        if(imageList[mAdapter.CP]==filterlist[mAdapter.CP]) {
+            imageList[mAdapter.CP] = Bitmap.createBitmap(imageList[mAdapter.CP], 0, 0, imageList[mAdapter.CP].getWidth(), imageList[mAdapter.CP].getHeight(), matrix, true)
+            filterlist[mAdapter.CP]=imageList[mAdapter.CP]
+        }
+        else {
+            imageList[mAdapter.CP] = Bitmap.createBitmap(imageList[mAdapter.CP], 0, 0, imageList[mAdapter.CP].getWidth(), imageList[mAdapter.CP].getHeight(), matrix, true)
+            filterlist[mAdapter.CP] = Bitmap.createBitmap(filterlist[mAdapter.CP], 0, 0, filterlist[mAdapter.CP].getWidth(), filterlist[mAdapter.CP].getHeight(), matrix, true)
 
+        }
+        image.setImageBitmap(imageList[mAdapter.CP])
+        mAdapter.updateList(imageList)
+    }
+
+    fun onClickCancel(view: View) {
+        renameBackground.visibility= GONE
+        creatingPdf.visibility= GONE
+        fileName.visibility= GONE
+        nameOfFile.visibility= GONE
+        okButton.visibility= GONE
+        cancelButton.visibility= GONE
+        blur.visibility = GONE
+        recyclerView.visibility = VISIBLE
+        PdfList.visibility = VISIBLE
+        Capture.visibility = VISIBLE
+        PickFromGallery.visibility = VISIBLE
+        B_W.visibility = VISIBLE
+        Convert.visibility = VISIBLE
+        New.visibility = VISIBLE
+        delete.visibility = VISIBLE
+        rotate.visibility = VISIBLE
+    }
 }
+

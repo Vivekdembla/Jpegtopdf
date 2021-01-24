@@ -35,7 +35,6 @@ abstract class PdfDataBase:RoomDatabase() {
                 instance
 
             }
-            Log.e("this","Paunch gye instance k aage")
         }
     }
 

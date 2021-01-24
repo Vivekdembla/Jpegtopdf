@@ -5,9 +5,9 @@
         android:startColor="#1975E0"
         android:centerColor="#CD95D2"
         android:endColor="#E99DB7"
-        android:angle="90"/>
-    <!--    <corners android:bottomRightRadius="20dp"-->
-    <!--        android:bottomLeftRadius="20dp"-->
-    <!--        android:topRightRadius="20dp"-->
-    <!--        android:topLeftRadius="20dp"/>-->
+        android:angle="270"/>
+<!--    <corners android:bottomRightRadius="20dp"-->
+<!--        android:bottomLeftRadius="20dp"-->
+<!--        android:topRightRadius="20dp"-->
+<!--        android:topLeftRadius="20dp"/>-->
 </shape>

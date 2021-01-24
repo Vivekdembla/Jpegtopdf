@@ -7,7 +7,7 @@
         android:topLeftRadius="20dp"/>
     <stroke
         android:width="3dp"
-        android:color="@color/Darkblue" >
+        android:color="@color/Top" >
     </stroke>
 
 

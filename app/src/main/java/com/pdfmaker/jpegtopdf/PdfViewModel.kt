@@ -1,7 +1,6 @@
-package com.example.jpegtopdf
+package com.pdfmaker.jpegtopdf
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.viewModelScope
@@ -15,9 +14,7 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: PdfRepository
 
     init {
-        Log.e("this","Paunch gye viewmodel fun me")
         val dao=PdfDataBase.getDatabase(application).getPdfDao()
-        Log.e("this","Paunch gye doa k aage")
         repository= PdfRepository(dao)
         allPdfs = repository.allPdfs
     }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="com.example.jpegtopdf">
+    package="com.pdfmaker.jpegtopdf">
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -22,10 +22,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
-        <activity android:name=".HomeActivity"
+        <activity android:name="com.pdfmaker.jpegtopdf.HomeActivity"
             android:screenOrientation="locked">
         </activity>
-        <activity android:name=".ShowPdfActivity"
+        <activity android:name="com.pdfmaker.jpegtopdf.ShowPdfActivity"
             android:screenOrientation="locked">
         </activity>
         <meta-data
@@ -34,12 +34,13 @@
 
         <meta-data
             android:name="com.google.android.actions"
-            android:resource="@drawable/round" />
+            android:resource="@drawable/round"/>
 
-        <activity android:name=".MainActivity"
+        <activity android:name="com.pdfmaker.jpegtopdf.MainActivity"
+            android:windowSoftInputMode="adjustResize"
             android:screenOrientation="locked">
         </activity>
-        <activity android:name=".SplashScreen"
+        <activity android:name="com.pdfmaker.jpegtopdf.SplashScreen"
             android:screenOrientation="locked">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -50,7 +51,7 @@
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.example.jpegtopdf.provider"
+            android:authorities="com.pdfmaker.jpegtopdf.provider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -59,7 +60,7 @@
         </provider>
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.example.android.fileprovider"
+            android:authorities="com.pdfmaker.android.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

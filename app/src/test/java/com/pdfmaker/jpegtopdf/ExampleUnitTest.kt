@@ -1,4 +1,4 @@
-package com.example.jpegtopdf
+package com.pdfmaker.jpegtopdf
 
 import org.junit.Test
 

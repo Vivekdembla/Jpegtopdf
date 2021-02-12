@@ -1,12 +1,8 @@
-package com.example.jpegtopdf
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+package com.pdfmaker.jpegtopdf
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.graphics.Bitmap
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -46,7 +42,7 @@ open class ShowPdfActivity : AppCompatActivity(), IconClicked {
         })
         val bundle = intent.extras
         if(bundle?.getString("FileName")!=null&&bundle.getString("FileDate")!=null) {
-            val PdfToBeAdded2 = Pdf(bundle?.getString("FileName")!!, bundle.getString("FileDate")!!)
+            val PdfToBeAdded2 = Pdf(bundle.getString("FileName")!!, bundle.getString("FileDate")!!,bundle.getInt("uniqueId"))
             viewModel.insertPdf(PdfToBeAdded2)
         }
     }
@@ -55,7 +51,7 @@ open class ShowPdfActivity : AppCompatActivity(), IconClicked {
         var x = File(getExternalFilesDir(null), "my file")
         val file = File(x, "${pdf.name}")
         if (file.exists()) {
-        val uri = FileProvider.getUriForFile(this, "com.example.jpegtopdf" + ".provider", file)
+        val uri = FileProvider.getUriForFile(this, "com.pdfmaker.jpegtopdf" + ".provider", file)
             val intent = Intent(Intent.ACTION_VIEW)
             intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -65,7 +61,6 @@ open class ShowPdfActivity : AppCompatActivity(), IconClicked {
             try {
                 this.startActivity(intent)
             } catch (e: ActivityNotFoundException) {
-                Log.e("this", "Activity not found")
             }
         }
 
@@ -77,7 +72,7 @@ open class ShowPdfActivity : AppCompatActivity(), IconClicked {
         var x = File(getExternalFilesDir(null), "my file")
         val file = File(x, "${pdf.name}")
         if (file.exists()) {
-            val uri = FileProvider.getUriForFile(this, "com.example.jpegtopdf" + ".provider", file)
+            val uri = FileProvider.getUriForFile(this, "com.pdfmaker.jpegtopdf" + ".provider", file)
             val share = Intent()
             share.action = Intent.ACTION_SEND
             share.type = "application/pdf"

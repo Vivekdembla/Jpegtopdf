@@ -1,4 +1,4 @@
-package com.example.jpegtopdf
+package com.pdfmaker.jpegtopdf
 
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -13,7 +13,7 @@ import com.google.android.gms.ads.MobileAds
 
 class HomeActivity : AppCompatActivity(), imageIconClicked {
 
-    lateinit var mAdView : AdView
+    lateinit var mAdView2 : AdView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -24,9 +24,9 @@ class HomeActivity : AppCompatActivity(), imageIconClicked {
         setContentView(R.layout.activity_home)
 
         MobileAds.initialize(this) {}
-        mAdView = findViewById(R.id.adView)
+        mAdView2 = findViewById(R.id.adView2)
         val adRequest = AdRequest.Builder().build()
-        mAdView.loadAd(adRequest)
+        mAdView2.loadAd(adRequest)
         val x:ArrayList<Bitmap> = ArrayList<Bitmap>()
         val adapter= ImageListAdapter(this)
         adapter.updateList(x)

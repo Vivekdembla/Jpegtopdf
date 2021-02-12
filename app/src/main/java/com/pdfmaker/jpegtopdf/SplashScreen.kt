@@ -1,4 +1,4 @@
-package com.example.jpegtopdf
+package com.pdfmaker.jpegtopdf
 
 import android.content.Intent
 import android.content.pm.ActivityInfo

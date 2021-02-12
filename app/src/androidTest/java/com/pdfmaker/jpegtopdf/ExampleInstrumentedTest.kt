@@ -1,4 +1,4 @@
-package com.example.jpegtopdf
+package com.pdfmaker.jpegtopdf
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

@@ -1,10 +1,13 @@
-package com.example.jpegtopdf
+package com.pdfmaker.jpegtopdf
 
 
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
+import android.content.SharedPreferences.Editor
 import android.content.pm.ActivityInfo
+import android.database.Cursor
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import android.media.ExifInterface
@@ -12,6 +15,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.provider.MediaStore.Downloads
 import android.util.Log
@@ -45,8 +49,10 @@ import kotlin.collections.ArrayList
 
 
 class MainActivity : AppCompatActivity(), imageIconClicked{
-    private final var TAG = "MainActivity"
+    var x=0
+//    private final var TAG = "MainActivity"
     lateinit var blur:ImageView
+    var SHARED_PRE="sharedpreference"
     lateinit var renameBackground:ImageView
     lateinit var creatingPdf:TextView
     lateinit var fileName:TextView
@@ -76,6 +82,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     lateinit var PickFromGallery:Button
     var mInterstitialAd: InterstitialAd?=null
     override fun onCreate(savedInstanceState: Bundle?) {
+
         this.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
             window.statusBarColor = ContextCompat.getColor(this, R.color.Top)
@@ -108,36 +115,53 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         recyclerView.adapter=mAdapter
         MobileAds.initialize(this) {}
         fetchAd()
+        loadData()
 
+    }
+
+    override fun onPause() {
+        super.onPause()
+        savedata()
+    }
+
+    fun savedata(){
+        var sharedPreferences:SharedPreferences= getSharedPreferences(SHARED_PRE, MODE_PRIVATE)
+        var editor: Editor= sharedPreferences.edit()
+        editor.putInt("key", x)
+        editor.apply()
+    }
+
+    fun loadData(){
+        var sharedPreferences = getSharedPreferences(SHARED_PRE, MODE_PRIVATE)
+        x=sharedPreferences.getInt("key", 0)
     }
 
     fun fetchAd(){
 
         val adRequest = AdRequest.Builder().build()
 
-        InterstitialAd.load(this,"ca-app-pub-3461290911046528/4857489097", adRequest, object : InterstitialAdLoadCallback() {
-            override fun onAdFailedToLoad(adError: LoadAdError) {
-                Log.d("this", adError.message);
-                mInterstitialAd = null
-            }
+        InterstitialAd.load(
+                this,
+                "ca-app-pub-3461290911046528/4857489097",//ca-app-pub-3461290911046528/4857489097
+                adRequest,
+                object : InterstitialAdLoadCallback() {
+                    override fun onAdFailedToLoad(adError: LoadAdError) {
+                        mInterstitialAd = null
+                    }
 
-            override fun onAdLoaded(interstitialAd: InterstitialAd) {
-                Log.d("this", "Ad was loaded.")
-                mInterstitialAd = interstitialAd
-            }
-        })
+                    override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                        mInterstitialAd = interstitialAd
+                    }
+                })
 
         mInterstitialAd?.fullScreenContentCallback = object: FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
-                Log.d("this", "Ad was dismissed.");
             }
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError?) {
-                Log.d("this", "Ad failed to show.");
             }
 
             override fun onAdShowedFullScreenContent() {
-                Log.d("this", "Ad showed fullscreen content.");
                 mInterstitialAd = null
             }
         }
@@ -178,23 +202,17 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             level2.visibility = VISIBLE
             val imageUri = data?.data
             image.setImageURI(imageUri)
-            Log.e("this", "image k andr")
-            val y = (image.drawable as BitmapDrawable).bitmap
-            val bitmap = y
-            Log.e("this", "bitmap k andr")
+            val bitmap = (image.drawable as BitmapDrawable).bitmap
             GlobalScope.launch(Dispatchers.IO) {
                 val scaled: Bitmap
                 if (bitmap.height > bitmap.width) {
                     val x: Float = bitmap.height.toFloat() / A2.height
                     scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt(), A2.height.toInt())
-                    Log.e("this", "scaled k andr")
-
-                } else {
-                    val x: Float = bitmap.width.toFloat() / A2.width
-                    scaled =
-                        getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt())
-                    Log.e("this", "else scaled k andr")
-                }
+                    } else {
+                        val x: Float = bitmap.width.toFloat() / A2.width
+                        scaled =
+                                getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt())
+                    }
                 imageList.add(mAdapter.CP + 1, scaled)
                 filterlist.add(mAdapter.CP + 1, scaled)
                 withContext(Dispatchers.Main) {
@@ -211,14 +229,11 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             }
         }
     }
-
     private fun setPic() {
-            Log.i("this", "SET PIC K ANDR")
             val targetW: Int = image.width
             val targetH: Int = image.height
 
             val bmOptions = BitmapFactory.Options().apply {
-                Log.i("this", "FACTORY PIC K ANDR")
 
                 inJustDecodeBounds = true
 
@@ -234,33 +249,38 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
                 inScaled = false
             }
             BitmapFactory.decodeFile(currentPhotoPath, bmOptions)?.also { bitmap ->
-                Log.e("this", "DECODE FILE K ANDR")
                 var scaled:Bitmap
                 if (bitmap.height > bitmap.width) {
                     val x: Float = bitmap.height.toFloat() / A2.height
-                    scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt() + 100, A2.height.toInt())
+                    scaled = getResizedBitmap(
+                            bitmap,
+                            (bitmap.width / x).toInt() + 100,
+                            A2.height.toInt()
+                    )
                 } else {
                     val x: Float = bitmap.width.toFloat() / A2.width
-                    scaled = getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt() + 100)
+                    scaled = getResizedBitmap(
+                            bitmap,
+                            A2.width.toInt(),
+                            (bitmap.height / x).toInt() + 100
+                    )
                 }
 
                 val matrix = Matrix()
                 val rotate = getImageOrientation(currentPhotoPath)
                 matrix.postRotate(rotate.toFloat())
-                scaled = Bitmap.createBitmap(scaled, 0, 0, scaled.getWidth(), scaled.getHeight(), matrix, true)
+                scaled = Bitmap.createBitmap(
+                        scaled,
+                        0,
+                        0,
+                        scaled.getWidth(),
+                        scaled.getHeight(),
+                        matrix,
+                        true
+                )
 
-//                if (mAdapter.CP < imageList.size) {
                 imageList.add(mAdapter.CP + 1, scaled)
                 filterlist.add(mAdapter.CP + 1, scaled)
-//                    p=mAdapter.CP+1
-//                val x = FilterBitmap(scaled)
-//                filterlist.add(mAdapter.CP + 1, x)
-//                } else {
-//                    imageList.add(scaled)
-//                    p=mAdapter.CP
-//                val x = FilterBitmap(scaled)
-//                filterlist.add(x)
-//                }
             }
     }
 
@@ -268,7 +288,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         var rotate = 0
         try {
             val exif = ExifInterface(imagePath!!)
-            val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
+            val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
             when (orientation) {
                 ExifInterface.ORIENTATION_ROTATE_270 -> rotate = 270
                 ExifInterface.ORIENTATION_ROTATE_180 -> rotate = 180
@@ -295,7 +315,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
                 bm, 0, 0, width, height, matrix, false
         )
 //        val resizedBitmap = Bitmap.createScaledBitmap(bm,width/8,height/8,false)
-        bm.recycle()
+        //bm.recycle()
         return resizedBitmap
     }
 
@@ -311,7 +331,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
                     photoFile?.also {
                         val photoURI: Uri = FileProvider.getUriForFile(
                                 this,
-                                "com.example.jpegtopdf.provider",
+                                "com.pdfmaker.jpegtopdf.provider",
                                 it
                         )
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
@@ -346,7 +366,6 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             mInterstitialAd?.show(this)
             fetchAd()
         } else {
-            Log.d("TAG", "The interstitial ad wasn't ready yet.")
             fetchAd()
         }
         renameBackground.visibility= VISIBLE
@@ -375,13 +394,14 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     }
 
     fun pdfAfterName(view: View){
-
+        x++
         GlobalScope.launch(Dispatchers.IO) {
             CreatePdf(imageList, "${nameOfFile.getText()}.pdf")
             withContext(Dispatchers.Main) {
                 val intent = Intent(this@MainActivity, ShowPdfActivity::class.java)
                 intent.putExtra("FileName", nameofpdf)
                 intent.putExtra("FileDate", dateofpdf)
+                intent.putExtra("uniqueId", x)
                 startActivity(intent)
             }
         }
@@ -477,6 +497,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
 
     fun OpenGallery(view: View) {
         val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+        gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
         startActivityForResult(gallery, PICK_IMAGE)
     }
 
@@ -485,12 +506,14 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             mInterstitialAd?.show(this)
             fetchAd()
         } else {
-            Log.d("TAG", "The interstitial ad wasn't ready yet.")
             fetchAd()
         }
         imageList.clear()
         mAdapter.updateList(imageList)
         image.setImageDrawable(ActivityCompat.getDrawable(this, R.drawable.imageimage))
+        delete.visibility = GONE
+        B_W.visibility = GONE
+        rotate.visibility = GONE
     }
 
     fun DeleteImage(view: View) {
@@ -592,12 +615,36 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         val matrix = Matrix()
         matrix.postRotate(90f)
         if(imageList[mAdapter.CP]==filterlist[mAdapter.CP]) {
-            imageList[mAdapter.CP] = Bitmap.createBitmap(imageList[mAdapter.CP], 0, 0, imageList[mAdapter.CP].getWidth(), imageList[mAdapter.CP].getHeight(), matrix, true)
+            imageList[mAdapter.CP] = Bitmap.createBitmap(
+                    imageList[mAdapter.CP],
+                    0,
+                    0,
+                    imageList[mAdapter.CP].getWidth(),
+                    imageList[mAdapter.CP].getHeight(),
+                    matrix,
+                    true
+            )
             filterlist[mAdapter.CP]=imageList[mAdapter.CP]
         }
         else {
-            imageList[mAdapter.CP] = Bitmap.createBitmap(imageList[mAdapter.CP], 0, 0, imageList[mAdapter.CP].getWidth(), imageList[mAdapter.CP].getHeight(), matrix, true)
-            filterlist[mAdapter.CP] = Bitmap.createBitmap(filterlist[mAdapter.CP], 0, 0, filterlist[mAdapter.CP].getWidth(), filterlist[mAdapter.CP].getHeight(), matrix, true)
+            imageList[mAdapter.CP] = Bitmap.createBitmap(
+                    imageList[mAdapter.CP],
+                    0,
+                    0,
+                    imageList[mAdapter.CP].getWidth(),
+                    imageList[mAdapter.CP].getHeight(),
+                    matrix,
+                    true
+            )
+            filterlist[mAdapter.CP] = Bitmap.createBitmap(
+                    filterlist[mAdapter.CP],
+                    0,
+                    0,
+                    filterlist[mAdapter.CP].getWidth(),
+                    filterlist[mAdapter.CP].getHeight(),
+                    matrix,
+                    true
+            )
 
         }
         image.setImageBitmap(imageList[mAdapter.CP])

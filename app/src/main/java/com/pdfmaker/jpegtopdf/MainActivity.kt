@@ -28,11 +28,15 @@ import androidx.constraintlayout.widget.Guideline
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.github.chrisbanes.photoview.PhotoView
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.theartofdev.edmodo.cropper.CropImage
+import com.theartofdev.edmodo.cropper.CropImageView
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
@@ -49,9 +53,10 @@ import kotlin.collections.ArrayList
 
 
 class MainActivity : AppCompatActivity(), imageIconClicked{
+    private lateinit var crop:Button
     var x=0
-//    private final var TAG = "MainActivity"
-    lateinit var blur:ImageView
+    private var uriList =ArrayList<Uri>()
+    private lateinit var blur:ImageView
     var SHARED_PRE="sharedpreference"
     lateinit var renameBackground:ImageView
     lateinit var creatingPdf:TextView
@@ -75,7 +80,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     var REQUEST_IMAGE_CAPTURE = 1
     var imageList:ArrayList<Bitmap> = ArrayList()
     val filterlist:ArrayList<Bitmap> = ArrayList()
-    lateinit var image: ImageView
+    lateinit var image: PhotoView
     lateinit var currentPhotoPath: String
     private lateinit var mAdapter: ImageListAdapter
     lateinit var Capture: Button
@@ -90,6 +95,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         MobileAds.initialize(this) {}
+        crop = findViewById(R.id.crop)
         blur = findViewById(R.id.blur)
         renameBackground=findViewById(R.id.renameBackground)
         creatingPdf =findViewById(R.id.creatingPdf)
@@ -116,7 +122,6 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         MobileAds.initialize(this) {}
         fetchAd()
         loadData()
-
     }
 
     override fun onPause() {
@@ -137,35 +142,35 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     }
 
     fun fetchAd(){
+            var adRequest = AdRequest.Builder().build()
 
-        val adRequest = AdRequest.Builder().build()
+            InterstitialAd.load(this,getString(R.string.FullPageid), adRequest, object : InterstitialAdLoadCallback() {
+                override fun onAdFailedToLoad(adError: LoadAdError) {
+                    Log.d("Checking", adError.message)
+                    mInterstitialAd = null
+                }
 
-        InterstitialAd.load(
-                this,
-                "ca-app-pub-3461290911046528/4857489097",//ca-app-pub-3461290911046528/4857489097
-                adRequest,
-                object : InterstitialAdLoadCallback() {
-                    override fun onAdFailedToLoad(adError: LoadAdError) {
-                        mInterstitialAd = null
-                    }
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    Log.d("Checking", "Ad was loaded.")
+                    mInterstitialAd = interstitialAd
 
-                    override fun onAdLoaded(interstitialAd: InterstitialAd) {
-                        mInterstitialAd = interstitialAd
-                    }
-                })
+                }
+            })
+            mInterstitialAd?.fullScreenContentCallback = object: FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    Log.d("Checking", "Ad was dismissed.")
+                }
 
-        mInterstitialAd?.fullScreenContentCallback = object: FullScreenContentCallback() {
-            override fun onAdDismissedFullScreenContent() {
-            }
+                override fun onAdFailedToShowFullScreenContent(adError: AdError?) {
+                    Log.d("Checking", "Ad failed to show.")
+                }
 
-            override fun onAdFailedToShowFullScreenContent(adError: AdError?) {
-            }
-
-            override fun onAdShowedFullScreenContent() {
-                mInterstitialAd = null
+                override fun onAdShowedFullScreenContent() {
+                    Log.d("TAG", "Ad showed fullscreen content.")
+                    mInterstitialAd = null;
+                }
             }
         }
-    }
 
 
     fun onClickingCapture(view: View) {
@@ -190,6 +195,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
                     Convert.visibility = VISIBLE
                     B_W.visibility = VISIBLE
                     rotate.visibility = VISIBLE
+                    crop.visibility = VISIBLE
                     level2.visibility = VISIBLE
                     image.setImageBitmap(imageList[mAdapter.CP])
 
@@ -198,9 +204,13 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             }
         }
         if (resultCode == RESULT_OK && requestCode == PICK_IMAGE) {
+            Log.e("abcdef","picked")
             progressBar.visibility = VISIBLE
             level2.visibility = VISIBLE
             val imageUri = data?.data
+            if(imageUri!=null) {
+                uriList.add(mAdapter.CP + 1, imageUri)
+            }
             image.setImageURI(imageUri)
             val bitmap = (image.drawable as BitmapDrawable).bitmap
             GlobalScope.launch(Dispatchers.IO) {
@@ -222,12 +232,57 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
                     Convert.visibility = VISIBLE
                     B_W.visibility = VISIBLE
                     rotate.visibility = VISIBLE
+                    crop.visibility = VISIBLE
                     mAdapter.refresh()
                     progressBar.visibility = GONE
                     image.setImageBitmap(imageList[mAdapter.CP])
                 }
             }
         }
+
+        if(requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE){
+            Log.e("abcde","crop k bahar")
+            if(resultCode== RESULT_OK){
+                val result:CropImage.ActivityResult = CropImage.getActivityResult(data)
+                var uri = result.uri
+                image.setImageURI(uri)
+
+                val bitmap = (image.drawable as BitmapDrawable).bitmap
+            GlobalScope.launch(Dispatchers.IO) {
+                val scaled: Bitmap
+                if (bitmap.height > bitmap.width) {
+                    val x: Float = bitmap.height.toFloat() / A2.height
+                    scaled = getResizedBitmap(bitmap, (bitmap.width / x).toInt(), A2.height.toInt())
+                } else {
+                    val x: Float = bitmap.width.toFloat() / A2.width
+                    scaled =
+                        getResizedBitmap(bitmap, A2.width.toInt(), (bitmap.height / x).toInt())
+                }
+                imageList[mAdapter.CP]=scaled
+                filterlist[mAdapter.CP] = imageList[mAdapter.CP]
+                withContext(Dispatchers.Main) {
+                    mAdapter.updateList(imageList)
+                }
+            }
+
+
+
+//                GlobalScope.launch(Dispatchers.IO) {
+//                    val bitmap2 = (image.drawable as BitmapDrawable).bitmap
+//                    imageList.remove(imageList[mAdapter.CP])
+//                    imageList.add(mAdapter.CP, bitmap2)
+//                    filterlist[mAdapter.CP] = imageList[mAdapter.CP]
+//                    mAdapter.updateList(imageList)
+//                }
+            }
+//            else if (resultCode == RESULT_CANCELED) {
+//                Log.e("abcde","error aaya hai")
+//                var error = result.getError()
+//            }
+
+        }
+
+
     }
     private fun setPic() {
             val targetW: Int = image.width
@@ -334,11 +389,11 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
                                 "com.pdfmaker.jpegtopdf.provider",
                                 it
                         )
+                        val x = photoURI
+                        //uriList.add(x)
                         takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
                         startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE)
-//                        val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-//                        startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE)
-
+                        uriList.add(x)
                     }
             }
         }
@@ -364,9 +419,8 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
     fun MakePdf(view: View) {
         if (mInterstitialAd != null) {
             mInterstitialAd?.show(this)
-            fetchAd()
         } else {
-            fetchAd()
+            Log.e("Checking","Ads not ready yet")
         }
         renameBackground.visibility= VISIBLE
         creatingPdf.visibility= VISIBLE
@@ -386,6 +440,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         New.visibility = GONE
         delete.visibility = GONE
         rotate.visibility = GONE
+        crop.visibility = GONE
         image.visibility = VISIBLE
         nameOfFile.requestFocus()
         val imm: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
@@ -497,16 +552,16 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
 
     fun OpenGallery(view: View) {
         val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
-        gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        //gallery.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        Log.e("abcde","Entered")
         startActivityForResult(gallery, PICK_IMAGE)
     }
 
     fun NewFile(view: View) {
         if (mInterstitialAd != null) {
             mInterstitialAd?.show(this)
-            fetchAd()
         } else {
-            fetchAd()
+
         }
         imageList.clear()
         mAdapter.updateList(imageList)
@@ -514,11 +569,13 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         delete.visibility = GONE
         B_W.visibility = GONE
         rotate.visibility = GONE
+        crop.visibility = GONE
     }
 
     fun DeleteImage(view: View) {
         val x = mAdapter.remove(imageList)
         filterlist.remove(filterlist[mAdapter.CP])
+        uriList.remove(uriList[mAdapter.CP])
 
         if (x > -1) {
             image.setImageBitmap(imageList[x])
@@ -536,6 +593,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
             delete.visibility = GONE
             B_W.visibility = GONE
             rotate.visibility = GONE
+            crop.visibility = GONE
         }
         mAdapter.updateList(imageList)
         mAdapter.refresh()
@@ -581,6 +639,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         PickFromGallery.visibility= GONE
         B_W.visibility= GONE
         rotate.visibility = GONE
+        crop.visibility = GONE
         PdfList.visibility = GONE
         Convert.visibility = GONE
         New.visibility = GONE
@@ -597,6 +656,7 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
                 PickFromGallery.visibility= VISIBLE
                 B_W.visibility= VISIBLE
                 rotate.visibility = VISIBLE
+                crop.visibility = VISIBLE
                 PdfList.visibility = VISIBLE
                 Convert.visibility = VISIBLE
                 New.visibility = VISIBLE
@@ -668,6 +728,13 @@ class MainActivity : AppCompatActivity(), imageIconClicked{
         New.visibility = VISIBLE
         delete.visibility = VISIBLE
         rotate.visibility = VISIBLE
+        crop.visibility = VISIBLE
+    }
+
+    fun onClickCrop(view: View) {
+        CropImage.activity(uriList?.get(mAdapter.CP))
+//            .setGuidelines(CropImageView.Guidelines.ON)
+            .start(this)
     }
 }
 

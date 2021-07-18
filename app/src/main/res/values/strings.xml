@@ -1,4 +1,6 @@
 <resources>
-    <string name="app_name">Pdf Maker</string>
+    <string name="app_name">Dastavez</string>
     <string name="pdf_maker">Pdf Maker</string>
+    <string name="FullPageid">ca-app-pub-3461290911046528/8477724154</string>
+    <string name="BannerId">ca-app-pub-3461290911046528/2295459185</string>
 </resources>

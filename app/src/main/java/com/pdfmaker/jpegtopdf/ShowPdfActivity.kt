@@ -33,7 +33,6 @@ open class ShowPdfActivity : AppCompatActivity(), IconClicked {
         recyclerView2.layoutManager = GridLayoutManager(this, 2)
         mAdapter2 = PdfListAdapter(this)
         recyclerView2.adapter = mAdapter2
-
         viewModel = ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory.getInstance(application)).get(PdfViewModel::class.java)
         viewModel.allPdfs.observe(this, androidx.lifecycle.Observer { list ->
             list?.let {
@@ -83,8 +82,8 @@ open class ShowPdfActivity : AppCompatActivity(), IconClicked {
 
 
     fun onClickingBack(view: View) {
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
+//        val intent = Intent(this, MainActivity::class.java)
+//        startActivity(intent)
         this.finish()
     }
 
